@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,6 +63,7 @@ public class LiyuImages extends JFrame {
 	private JTextField currentImageName;
 	private File currentImageFile;
 	private JButton deleteNodeButton;
+	private File tempImages;
 	//draw image in the file chooser
 	private class PaintPanel extends JPanel {
 		/**
@@ -91,7 +91,7 @@ public class LiyuImages extends JFrame {
 	private PaintPanel paintSelectedImage;
 	
 	public LiyuImages() {
-		setTitle("Liyu");
+		setTitle("LiyuImages");
 		this.setResizable(false);
 		setBounds(350, 130, 750, 540);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -167,10 +167,10 @@ public class LiyuImages extends JFrame {
 									selectedImage = null;
 									paintSelectedImage.setImage(selectedImage);
 									paintSelectedImage.repaint();
-									lastNode = null;
-									nextNode = null;
 									last.setEnabled(false);
 									next.setEnabled(false);
+									last = null;
+									next = null;
 								}
 								file.delete();
 							}
@@ -188,7 +188,8 @@ public class LiyuImages extends JFrame {
 					String parentNode = selectionNode.getParent().toString();
 					int result=JOptionPane.showConfirmDialog(null, "Are you sure to delete this image?", null, 0);
 					if (result == 0) {
-						File image = new File("./images/"+parentNode+"/"+nodeName);
+						File image = new File("./images/"+parentNode+"/"+
+								nodeName.substring(0,nodeName.lastIndexOf('.'))+".bin");
 						image.delete();
 						currentImageFile = null;
 						selectedImage = null;
@@ -241,8 +242,7 @@ public class LiyuImages extends JFrame {
 			public void actionPerformed (ActionEvent e) {
 				JFileChooser saveChooser = new JFileChooser();
 				saveChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				saveChooser.setMultiSelectionEnabled(false);
-				
+				saveChooser.setMultiSelectionEnabled(false);			
 				if (selectedImage == null) {
 					JOptionPane.showMessageDialog(null, "Please open an image!", null, JOptionPane.WARNING_MESSAGE);
 					return;
@@ -256,9 +256,12 @@ public class LiyuImages extends JFrame {
 					BufferedImage bi = new BufferedImage(w,h,BufferedImage.TYPE_3BYTE_BGR);
 					Graphics g = bi.getGraphics();
 					g.drawImage(selectedImage, 0, 0, null);
+					//change currentImageFile to selectionNode
+					String imageType = selectionNode.toString().substring(selectionNode.toString().lastIndexOf('.')+1,
+							selectionNode.toString().length());
 					try {
-						ImageIO.write(bi, "jpg", new File(savePath+"/"+currentImageFile.getName()));	
-						JOptionPane.showMessageDialog(null, currentImageFile.getName()+" has been saved to "+savePath+" successfully!", 
+						ImageIO.write(bi, imageType, new File(savePath+"/"+selectionNode.toString()));	
+						JOptionPane.showMessageDialog(null, selectionNode.toString()+" has been saved to "+savePath+" successfully!", 
 								null, JOptionPane.WARNING_MESSAGE);
 					} catch(Exception e1) {
 						e1.getMessage();
@@ -272,6 +275,10 @@ public class LiyuImages extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				int result = JOptionPane.showConfirmDialog(null, "Do you want to exit?", "Exit", 0);
 				if (result == 0)
+					tempImages = new File("./tmp");
+					for (File file : tempImages.listFiles()) {
+						file.delete();
+					}
 					System.exit(0);
 			}
 		});
@@ -306,7 +313,7 @@ public class LiyuImages extends JFrame {
 		for (File dir : dirs) {
 			newNode = new DefaultMutableTreeNode(dir.getName());
 			for (File image : dir.listFiles()) {
-				newNode.add(new DefaultMutableTreeNode(image.getName(), false));
+				newNode.add(new DefaultMutableTreeNode(image.getName().substring(0, image.getName().lastIndexOf('.'))+".jpg", false));
 			}
 			rootNode.add(newNode);			
 		}
@@ -359,11 +366,23 @@ public class LiyuImages extends JFrame {
 					if (selectionNode.getAllowsChildren() == false && selectionNode.isLeaf()) {
 						DefaultMutableTreeNode parent = (DefaultMutableTreeNode)selectionNode.getParent();
 						try {
-							currentImageFile = new File("./images/"+parent.toString()+"/"+nodeName);
-							selectedImage = getToolkit().getImage(currentImageFile.toURI().toURL());
+							currentImageFile = new File("./images/"+parent.toString()+"/"+nodeName.substring(0,nodeName.lastIndexOf('.'))+".bin");						
+							//get Image from binary file, write image to temp directory temporary
+							String outFilePath = "./tmp/"+nodeName;
+							FileInputStream fs = new FileInputStream(currentImageFile);
+							byte[] binImage = new byte[(int)currentImageFile.length()];
+							fs.read(binImage, 0, (int)currentImageFile.length());
+							FileOutputStream os = new FileOutputStream(outFilePath);
+							os.write(binImage);
+							fs.close();
+							os.close();
+							//get Image from temp and display it
+							File tempImageFile = new File(outFilePath);
+							selectedImage = getToolkit().getImage(tempImageFile.toURI().toURL());
 							paintSelectedImage.setImage(selectedImage);
 							paintSelectedImage.repaint();
-							currentImageName.setText(currentImageFile.getName());
+							currentImageName.setText(nodeName);
+							//tempImageFile.delete();
 						} catch (Exception e1) {
 							e1.getMessage();
 						}
@@ -379,6 +398,14 @@ public class LiyuImages extends JFrame {
 						} else {
 							next.setEnabled(false);
 						}
+					} else {
+						currentImageFile = null;
+						selectedImage = null;
+						paintSelectedImage.setImage(selectedImage);
+						paintSelectedImage.repaint();
+						currentImageName.setText("");
+						last.setEnabled(false);
+						next.setEnabled(false);
 					}
 				}
 			}
@@ -442,6 +469,7 @@ public class LiyuImages extends JFrame {
 			uploadPath.setText(file.getAbsolutePath());
 			if (file != null && file.isFile()) {
 				try {
+					//file is an image file from an outer directory
 					selectedImage = getToolkit().getImage(file.toURI().toURL());
 					paintSelectedImage.setImage(selectedImage);
 					paintSelectedImage.repaint();
@@ -490,26 +518,26 @@ public class LiyuImages extends JFrame {
 		
 		String imageType = uploadPath.getText().substring(uploadPath.getText().lastIndexOf('.')+1, uploadPath.getText().length());
 		//save to directory
-		try {
-			
+		try {	
+			/*
 			int w = selectedImage.getWidth(null);
 			int h = selectedImage.getHeight(null);
 			BufferedImage bi = new BufferedImage(w,h,BufferedImage.TYPE_3BYTE_BGR);
 			Graphics g = bi.getGraphics();
 			g.drawImage(selectedImage, 0, 0, null);
 			ImageIO.write(bi, imageType, new File("./images/"+selectNode.toString()+"/"+imageName.getText()+"."+imageType));			
-			
-			/*
-			String outputFilePath = "./images/"+selectNode.toString()+"/"+imageName.getText()+".bin";
-			DataOutputStream outStream = new DataOutputStream(new FileOutputStream(outputFilePath));
-			FileInputStream inStream = new FileInputStream(uploadPath.getText());
-			int infileLength = (int)currentImageFile.length();
-			byte[] imageBytes = new byte[infileLength];
-			inStream.read(imageBytes, 0, infileLength);
-			outStream.write(imageBytes, 0, infileLength);
-			inStream.close();
-			outStream.close();
 			*/
+			File toBeSavedFile = new File(uploadPath.getText());
+			DataOutputStream saveOutput = new DataOutputStream(new FileOutputStream(
+					"./images/"+selectNode.toString()+"/"+imageName.getText()+
+					".bin"));
+			FileInputStream infileToSave = new FileInputStream(toBeSavedFile);
+			byte[] binImage = new byte[(int)toBeSavedFile.length()];
+			infileToSave.read(binImage, 0, (int)toBeSavedFile.length());
+			saveOutput.write(binImage, 0, (int)toBeSavedFile.length());
+			saveOutput.close();
+			infileToSave.close();
+			
 			last.setEnabled(true);
 			next.setEnabled(true);
 		} catch(Exception e1) {
@@ -533,11 +561,25 @@ public class LiyuImages extends JFrame {
 	protected void getLast() {
 		String nodeName = lastNode.toString();
 		try {
-			currentImageFile = new File("./images/"+lastNode.getParent().toString()+"/"+nodeName);
-			selectedImage = getToolkit().getImage(currentImageFile.toURI().toURL());
+			//currentImageFile is a binary file
+			currentImageFile = new File("./images/"+lastNode.getParent().toString()+"/"+
+					nodeName.substring(0, nodeName.lastIndexOf('.'))+".bin");
+			//get Image from binary file, write image to temp directory temporary
+			String outFilePath = "./tmp/"+nodeName;
+			FileInputStream fs = new FileInputStream(currentImageFile);
+			byte[] binImage = new byte[(int)currentImageFile.length()];
+			fs.read(binImage, 0, (int)currentImageFile.length());
+			FileOutputStream os = new FileOutputStream(outFilePath);
+			os.write(binImage);
+			fs.close();
+			os.close();
+			//get Image from temp and display it
+			File tempImageFile = new File(outFilePath);
+			selectedImage = getToolkit().getImage(tempImageFile.toURI().toURL());
 			paintSelectedImage.setImage(selectedImage);
 			paintSelectedImage.repaint();
-			currentImageName.setText(currentImageFile.getName());
+			currentImageName.setText(nodeName);
+			//tempImageFile.delete();
 		} catch(Exception e) {
 			e.getMessage();
 		}
@@ -555,11 +597,24 @@ public class LiyuImages extends JFrame {
 	protected void getNext() {	
 		String nodeName = nextNode.toString();
 		try {
-			currentImageFile = new File("./images/"+nextNode.getParent().toString()+"/"+nodeName);
-			selectedImage = getToolkit().getImage(currentImageFile.toURI().toURL());
+			currentImageFile = new File("./images/"+nextNode.getParent().toString()+"/"+
+					nodeName.substring(0, nodeName.lastIndexOf('.'))+".bin");
+			//get Image from binary file, write image to temp directory temporary
+			String outFilePath = "./tmp/"+nodeName;
+			FileInputStream fs = new FileInputStream(currentImageFile);
+			byte[] binImage = new byte[(int)currentImageFile.length()];
+			fs.read(binImage, 0, (int)currentImageFile.length());
+			FileOutputStream os = new FileOutputStream(outFilePath);
+			os.write(binImage);
+			fs.close();
+			os.close();
+			//get Image from temp and display it
+			File tempImageFile = new File(outFilePath);
+			selectedImage = getToolkit().getImage(tempImageFile.toURI().toURL());
 			paintSelectedImage.setImage(selectedImage);
 			paintSelectedImage.repaint();
-			currentImageName.setText(currentImageFile.getName());
+			currentImageName.setText(nodeName);
+			//tempImageFile.delete();
 		} catch(Exception e) {
 			e.getMessage();
 		}
@@ -574,8 +629,8 @@ public class LiyuImages extends JFrame {
 			next.setEnabled(false);
 		}
 	}
-	public static void main(String[] args) {
-	//public static void launch() {
+	//public static void main(String[] args) {
+	public static void launch() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				new LiyuImages().setVisible(true);

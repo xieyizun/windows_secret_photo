@@ -96,7 +96,7 @@ public class LoginFrame extends JFrame {
 	protected void loginButtonClick() {
 		String name = userName.getText();
 		String pw = password.getText();
-		String infoPath = "./info.bin";
+		String infoPath = ".user/info.bin";
 		ArrayList<String> infoMessage = new ArrayList<String>();
 		try {
 			@SuppressWarnings("resource")
@@ -111,7 +111,7 @@ public class LoginFrame extends JFrame {
 		if (!name.isEmpty() && !pw.isEmpty() && name.equals(infoMessage.get(0))
 				&& pw.equals(infoMessage.get(1))) {
 		    JOptionPane.showMessageDialog(this, "Login successfully","Successful",JOptionPane.INFORMATION_MESSAGE);
-		    //LiyuImages.launch();
+		    LiyuImages.launch();
 		    this.setVisible(false);
 		} else {
 			JOptionPane.showMessageDialog(this, "Login Failure","Failure", JOptionPane.WARNING_MESSAGE);

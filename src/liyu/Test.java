@@ -1,74 +1,78 @@
 package liyu;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+
+
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.awt.image.MemoryImageSource;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import javax.swing.tree.TreeSelectionModel;
 
-public class Test extends JFrame {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+public class Test {
 	private Image image;
 	public Test() {
-		String filePath = "./images/test.bin";
-		String outPath = "./images/fang.jpg";		
-		File infile = new File(filePath);
-			try {			
-				int w =image.getWidth(null);
-				int h = image.getHeight(null);
-				BufferedImage bi = ImageIO.read(infile);
-				ImageIO.write(bi, "jpg", new File(outPath));	
-			} catch(Exception e1) {
-				e1.getMessage();
-			}
+		String outfilePath = "/home/xyz/sky.bin";
+		String infilePath = "/home/xyz/sky.jpg";
+		
+		File infile = new File(infilePath);
 		/*
+		try {			
+			BufferedImage bi = ImageIO.read(infile);
+			ImageIO.write(bi, "jpg", new File(outPath));
+			File tempfile = new File("/home/xyz/nba.jpg");
+			tempfile.delete();
+		} catch(Exception e1) {
+			e1.getMessage();
+		}
+		*/
+		
 		try {
-			DataOutputStream out = new DataOutputStream(new FileOutputStream(filePath));
-			FileInputStream fs = new FileInputStream(inPath);
+			DataOutputStream out = new DataOutputStream(new FileOutputStream(outfilePath));
+			FileInputStream fs = new FileInputStream(infile);
 			byte[] binImage = new byte[(int)infile.length()];
 			fs.read(binImage, 0, (int)infile.length());
+			image = Toolkit.getDefaultToolkit().createImage(binImage);
 			out.write(binImage, 0, (int)infile.length());
+			
 			out.close();
 			fs.close();
 			
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+			e.getMessage();
+		}
+		String resultPath = "/home/xyz/shixun";
+		myWrite(resultPath);
+		System.out.println(image.getHeight(null));
 	}
+	public Image myWrite(String filePath) {
+	     try {
+	        int w = image.getWidth(null);
+	        int h = image.getHeight(null);
+
+	        BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR);
+	        Graphics g = bi.getGraphics();
+	        //draw out the image by an instance of Class Graphics
+	        g.drawImage(image, 0, 0, null);
+	        //write image of type bmp to disk
+	        ImageIO.write(bi, "jpg", new File(filePath));
+	        System.out.println("success");
+	        return image;
+	     } catch(Exception e) {
+	        e.getMessage();
+	     }
+	     return (Image)null;
+	    }
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				new Test().setVisible(true);
+				new Test();
 			}
 		});
 	}
