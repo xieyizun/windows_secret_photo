@@ -7,13 +7,9 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 public class CreateUser {
-
+	private static String filePath = "./user/info.bin";
 	@SuppressWarnings("deprecation")
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		String name = "Louise.li";
-		String password = "BabyIloveyou";
-		String filePath = "./info.bin";
+	public CreateUser(String name, String password) {
 		try {
 			DataOutputStream out = new DataOutputStream(new FileOutputStream(filePath));
 			out.writeBytes(name);
@@ -31,12 +27,9 @@ public class CreateUser {
 				s.add(str);
 			}
 			in.close();
-			System.out.println(s.get(0) + " " + s.get(1) + " " + "Successfully");
 		} catch(Exception e1) {
 			e1.printStackTrace();
 		}
-		
-
 	}
 
 }
