@@ -34,6 +34,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
+
+import com.xieyizun.internet_action.UploadPhoto;
 public class LiyuImages extends JFrame {
 	/**
 	 * 
@@ -52,6 +54,7 @@ public class LiyuImages extends JFrame {
 	private File[] dirs;
 	private JButton last;
 	private JButton next;
+	private JButton uploadInternetButton;
 	private JTextField imageName;
 	private JLabel saveLabel;
 	private DefaultTreeModel treeModel;
@@ -93,7 +96,7 @@ public class LiyuImages extends JFrame {
 	private PaintPanel paintSelectedImage;
 	
 	public LiyuImages() {
-		setTitle("LiyuImages");
+		setTitle("私密相册");
 		//this.setResizable(false);
 		setBounds(300, 10, 800, 700);
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -101,7 +104,7 @@ public class LiyuImages extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				int result = JOptionPane.showConfirmDialog(null, "Do you want to exit?", "Exit", 0);
+				int result = JOptionPane.showConfirmDialog(null, "退出?", "Exit", 0);
 				if (result == 0)				
 					System.exit(0);
 			}
@@ -126,16 +129,33 @@ public class LiyuImages extends JFrame {
 		bottomPane.setOpaque(false);
 		getContentPane().add(bottomPane, BorderLayout.SOUTH);
 		//last and next Button
-		last = new JButton("last");
-		next = new JButton("next");
+		last = new JButton("上一张");
+		next = new JButton("下一张");
+		uploadInternetButton = new JButton("上传");
+		
+		uploadInternetButton.setEnabled(false);
+		uploadInternetButton.setPreferredSize(new Dimension(100,30));
+		uploadInternetButton.setFont(new Font("", Font.ITALIC,15));
+		uploadInternetButton.setForeground(Color.BLACK);
+		
 		last.setEnabled(false);
 		last.setPreferredSize(new Dimension(100,30));
 		last.setFont(new Font("", Font.ITALIC,15));
 		last.setForeground(Color.BLACK);
+		
 		next.setEnabled(false);
 		next.setPreferredSize(new Dimension(100,30));
 		next.setFont(new Font("", Font.ITALIC,15));
 		next.setForeground(Color.BLACK);
+		//上传图片到服务器
+		uploadInternetButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				//doUploadInternet();
+				System.out.println(currentImageFile.getAbsolutePath());
+				UploadPhoto.uploadPhotoToInternet(currentImageFile.getAbsolutePath());
+			}
+		});
+		
 		last.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				getLast();
@@ -147,7 +167,7 @@ public class LiyuImages extends JFrame {
 			}
 		});
 		//delete button
-		deleteNodeButton = new JButton("Delete");
+		deleteNodeButton = new JButton("删除");
 		deleteNodeButton.setEnabled(false);
 		deleteNodeButton.setFont(new Font("", Font.ITALIC,15));
 		deleteNodeButton.setPreferredSize(new Dimension(100,5));
@@ -157,19 +177,19 @@ public class LiyuImages extends JFrame {
 				if (selectionNode.getAllowsChildren()) {
 					File hasImages = new File("./images/"+nodeName);
 					if (hasImages.listFiles().length==0) {
-						int result = JOptionPane.showConfirmDialog(null, "This directory is empty. Are you sure to delete it?", null, 0);
+						int result = JOptionPane.showConfirmDialog(null, "确定删除?", null, 0);
 						if (result == 0) {
 							hasImages.delete();
 							DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 							model.removeNodeFromParent(selectionNode);
 							tree.repaint();
 							deleteNodeButton.setEnabled(false);
-							JOptionPane.showMessageDialog(null, "Delete directory "+nodeName+" successfully!");
+							JOptionPane.showMessageDialog(null, "删除目录 "+nodeName+" 成功!");
 						} else {
 							return;
 						}						
 					} else {
-						int result = JOptionPane.showConfirmDialog(null, "There are some images in this directory. Are you sure to delete it?",
+						int result = JOptionPane.showConfirmDialog(null, "目录中的相片会一同删除，确定删除?",
 								null, 0);
 						if (result == 0) {
 							for (File file : hasImages.listFiles()) {
@@ -190,14 +210,14 @@ public class LiyuImages extends JFrame {
 							model.removeNodeFromParent(selectionNode);
 							tree.repaint();
 							deleteNodeButton.setEnabled(false);
-							JOptionPane.showMessageDialog(null, "Delete directory "+nodeName+" successfully!");
+							JOptionPane.showMessageDialog(null, "删除目录 "+nodeName+" 成功!");
 						} else {
 							return;
 						}
 					}
 				} else {
 					String parentNode = selectionNode.getParent().toString();
-					int result=JOptionPane.showConfirmDialog(null, "Are you sure to delete this image?", null, 0);
+					int result=JOptionPane.showConfirmDialog(null, "确定删除相片?", null, 0);
 					if (result == 0 && currentImageName != null) {
 						File image = new File("./images/"+parentNode+"/"+
 								currentImageName.getText());
@@ -212,7 +232,7 @@ public class LiyuImages extends JFrame {
 							model.removeNodeFromParent(selectionNode);
 							tree.repaint();
 							currentImageName.setText("");
-							JOptionPane.showMessageDialog(null, "Delete image "+nodeName+" successfully!");
+							JOptionPane.showMessageDialog(null, "成功删除相片 "+nodeName);
 							deleteNodeButton.setEnabled(false);
 						} else {						
 							try {
@@ -234,7 +254,7 @@ public class LiyuImages extends JFrame {
 								}
 							}
 							tree.repaint();
-							JOptionPane.showMessageDialog(null, "Delete image "+currentImageName.getText()+" successfully!");	
+							JOptionPane.showMessageDialog(null, "成功删除相片 "+currentImageName.getText());	
 							currentImageName.setText(nodeName);						
 						}
 					} else {
@@ -245,7 +265,7 @@ public class LiyuImages extends JFrame {
 		});
 		JPanel bottomButtonsPane = new JPanel();
 		bottomButtonsPane.setOpaque(false);
-		saveimage = new JButton("Save");
+		saveimage = new JButton("保存");
 		saveimage.setPreferredSize(new Dimension(100,30));
 		saveimage.setFont(new Font("", Font.ITALIC,15));
 		saveimage.setForeground(Color.BLACK);
@@ -259,7 +279,7 @@ public class LiyuImages extends JFrame {
 		imageName.setFont(new Font("", Font.ITALIC, 15));
 		imageName.setColumns(10);
 		imageName.setText("");
-		saveLabel = new JLabel("     Save Name:");
+		saveLabel = new JLabel("     名称:");
 		saveLabel.setFont(new Font("", Font.ITALIC,17));
 		saveLabel.setForeground(Color.BLACK);
 		bottomPane.add(deleteNodeButton, BorderLayout.WEST);
@@ -269,23 +289,25 @@ public class LiyuImages extends JFrame {
 		bottomButtonsPane.add(saveimage);
 		bottomButtonsPane.add(last);
 		bottomButtonsPane.add(next);
+		bottomButtonsPane.add(uploadInternetButton);
+		
 		bottomPane.add(bottomButtonsPane, BorderLayout.CENTER);
 		//menuBar
 		JMenuBar menuBar = new JMenuBar();
 		//file operator
-		JMenu fileOperation = new JMenu("File");
-		JMenuItem saveAs = new JMenuItem("Save As");
+		JMenu fileOperation = new JMenu("文件");
+		JMenuItem saveAs = new JMenuItem("另存为");
 		saveAs.addActionListener(new ActionListener() {
 			public void actionPerformed (ActionEvent e) {
 				JFileChooser saveChooser = new JFileChooser();
 				saveChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				saveChooser.setMultiSelectionEnabled(false);			
 				if (selectedImage == null) {				
-					JOptionPane.showMessageDialog(null, "Please open an image!", null, JOptionPane.WARNING_MESSAGE);
+					JOptionPane.showMessageDialog(null, "请打开一张相片!", null, JOptionPane.WARNING_MESSAGE);
 					return;
 				} 
 				if ("".equals(currentImageName.getText())) {
-					JOptionPane.showMessageDialog(null, "The image hasn't upload!", null, JOptionPane.WARNING_MESSAGE);
+					JOptionPane.showMessageDialog(null, "没有上传相片!", null, JOptionPane.WARNING_MESSAGE);
 					return;
 				}
 				int result = saveChooser.showOpenDialog(null);
@@ -302,7 +324,7 @@ public class LiyuImages extends JFrame {
 							currentImageName.getText().toString().length());
 					try {
 						ImageIO.write(bi, imageType, new File(savePath+"/"+currentImageName.getText().toString()));	
-						JOptionPane.showMessageDialog(null, currentImageName.getText().toString()+" has been saved to "+savePath+" successfully!", 
+						JOptionPane.showMessageDialog(null, currentImageName.getText().toString()+" 已经成功保存到 "+savePath, 
 								null, JOptionPane.WARNING_MESSAGE);
 					} catch(Exception e1) {
 						e1.getMessage();
@@ -311,10 +333,10 @@ public class LiyuImages extends JFrame {
 				}
 			}
 		});
-		JMenuItem exit = new JMenuItem("Exit");
+		JMenuItem exit = new JMenuItem("退出");
 		exit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int result = JOptionPane.showConfirmDialog(null, "Do you want to exit?", "Exit", 0);
+				int result = JOptionPane.showConfirmDialog(null, "确定退出?", "Exit", 0);
 				if (result == 0)			
 					System.exit(0);
 			}
@@ -325,33 +347,44 @@ public class LiyuImages extends JFrame {
 		fileOperation.add(exit);
 		
 		//help
-		JMenu help = new JMenu("help");
-		JMenuItem usage = new JMenuItem("usage");
+		JMenu help = new JMenu("帮助");
+		JMenuItem usage = new JMenuItem("用法");
 		help.add(usage);
 		//about
-		JMenu about = new JMenu("about");
-		JMenuItem aboutUs = new JMenuItem("contact");
+		JMenu about = new JMenu("关于");
+		JMenuItem aboutUs = new JMenuItem("联系");
 		aboutUs.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(null, "If there are any problems arised when you use this software,"
 						+"\n"+"please contact us by 1824762899@qq.com by email. Thank you!",
 						"contact", JOptionPane.PLAIN_MESSAGE);
 			}
-		});
-		JMenuItem versions = new JMenuItem("version");
+		});	
+		
+		JMenuItem versions = new JMenuItem("版本");
 		about.add(aboutUs);
 		about.addSeparator();
 		about.add(versions);
+		
+		//account
+		JMenu me = new JMenu("账号");
+		JMenuItem account = new JMenuItem("用户名：" + LoginFrame.username);
+		me.add(account);
+		
 		menuBar.add(fileOperation);
 		menuBar.add(help);
 		menuBar.add(about);
+		menuBar.add(me);
+		
 		setJMenuBar(menuBar);
 		
+
+				
 		//scroll pane	
 		scrollPane = new JScrollPane();
 		scrollPane.setBorder(new EmptyBorder(3, 3, 3, 3));
 		//root nodes
-		final DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Images");
+		final DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("相片");
 		allDirs = new File("./images");
 		dirs = allDirs.listFiles();
 		for (File dir : dirs) {
@@ -369,13 +402,13 @@ public class LiyuImages extends JFrame {
 		//operate nodes
 		
 		final JPopupMenu operateNodes = new JPopupMenu();
-		JMenuItem item1 = new JMenuItem("new directory");
-		JMenuItem item2 = new JMenuItem("upload several images");
+		JMenuItem item1 = new JMenuItem("新建目录");
+		JMenuItem item2 = new JMenuItem("批量导入相片");
 		item1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 				//newDirName = "";
-				newDirName = JOptionPane.showInputDialog("please input the directory's name: ");
+				newDirName = JOptionPane.showInputDialog("请输入目录名: ");
 				if (newDirName != null && !"".equals(newDirName)) {
 					
 					@SuppressWarnings("unchecked")
@@ -383,7 +416,7 @@ public class LiyuImages extends JFrame {
 					while(childNodes.hasMoreElements()) {
 						DefaultMutableTreeNode node = childNodes.nextElement();
 						if (newDirName.equals(node.toString())) {
-							JOptionPane.showMessageDialog(null, "A directory with this name exists. Please rename it!", "Name error", 
+							JOptionPane.showMessageDialog(null, "目录已存在，请重新命名!", "Name error", 
 									JOptionPane.WARNING_MESSAGE);
 							return;
 						}
@@ -405,11 +438,11 @@ public class LiyuImages extends JFrame {
 				
 				Enumeration<DefaultMutableTreeNode> rootChildren = root.children();
 				if (rootChildren.hasMoreElements()==false) {
-					JOptionPane.showMessageDialog(null, "Please add a child directory firstly!", null, JOptionPane.WARNING_MESSAGE);
+					JOptionPane.showMessageDialog(null, "请新建文件夹!", null, JOptionPane.WARNING_MESSAGE);
 					return;
 				}
 				//select the directory that these images will be saved to
-				String imagesDirectoryName = JOptionPane.showInputDialog("Please input the directory that you save the images: ");
+				String imagesDirectoryName = JOptionPane.showInputDialog("请输入文件夹名称: ");
 			    //deal with cancel selection
 				if (imagesDirectoryName == null) {
 			    	return;
@@ -423,7 +456,7 @@ public class LiyuImages extends JFrame {
 					}
 				}
 				if (rightDirectory == false) {
-					JOptionPane.showMessageDialog(null, "Please select an exisited directory!", null, JOptionPane.WARNING_MESSAGE);
+					JOptionPane.showMessageDialog(null, "请选择一个已经存在的目录!", null, JOptionPane.WARNING_MESSAGE);
 					return;
 				}
 				//show file chooser so as to selected files
@@ -460,7 +493,7 @@ public class LiyuImages extends JFrame {
 					currentImageName.setText("");
 					last.setEnabled(false);
 					next.setEnabled(false);
-					String imageName = JOptionPane.showInputDialog("Please input the name of the image: ");
+					String imageName = JOptionPane.showInputDialog("请输入相片名: ");
 					if (imageName == null) {
 						if (i == images.length-1) {
 							break;
@@ -468,17 +501,17 @@ public class LiyuImages extends JFrame {
 						continue;
 					}
 					while ("".equals(imageName)) {
-							JOptionPane.showMessageDialog(null, "Image name can't be blank!", "Image save failure", JOptionPane.WARNING_MESSAGE);
-							imageName = JOptionPane.showInputDialog("Please input the name of the image: ");
+							JOptionPane.showMessageDialog(null, "名字不能为空!", "Image save failure", JOptionPane.WARNING_MESSAGE);
+							imageName = JOptionPane.showInputDialog("请输入相片的名字: ");
 					}
 					//avoid the same name in a directory
 					Enumeration<DefaultMutableTreeNode> childNodes = rootChild.children();
 					while(childNodes.hasMoreElements()) {
 							DefaultMutableTreeNode node = childNodes.nextElement();
 							if (node.toString().substring(0, node.toString().lastIndexOf('.')).equals(imageName)) {
-								JOptionPane.showMessageDialog(null, "An image with this name exists. Please rename it!", "Name error", 
+								JOptionPane.showMessageDialog(null, "该名称已存在，请重新命名!", "Name error", 
 										JOptionPane.WARNING_MESSAGE);
-								imageName = JOptionPane.showInputDialog("Please input the name of the image: ");
+								imageName = JOptionPane.showInputDialog("请输入相片名: ");
 								childNodes = rootChild.children();
 							}
 					}
@@ -495,8 +528,9 @@ public class LiyuImages extends JFrame {
 						imagetype = image.getAbsolutePath().toString().substring(image.getAbsolutePath().toString().lastIndexOf('.',
 								image.getAbsolutePath().toString().length()));
 						try {
+							//"_" + LoginFrame.username用于在上传到数据库时标识用户
 							ImageIO.write(bi, imagetype.substring(1,imagetype.length()),
-									new File("./images/"+rootChild.toString()+"/"+imageName+imagetype));
+									new File("./images/"+rootChild.toString()+"/"+imageName + "_" + LoginFrame.username+imagetype));
 							//set the image is hidden in the directory images
 							File saveOutputFile = new File("./images/"+rootChild.toString()+"/"+imageName+imagetype);
 							String sets = "attrib +H \"" + saveOutputFile.getAbsolutePath() + "\""; 
@@ -511,7 +545,7 @@ public class LiyuImages extends JFrame {
 						e1.printStackTrace();
 					}
 					//add node to the JTree
-					DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(imageName+imagetype, false);
+					DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(imageName+ "_" + LoginFrame.username+imagetype, false);
 					model.insertNodeInto(newNode, rootChild, rootChild.getChildCount());
 					TreeNode[] nodes = model.getPathToRoot(newNode);
 					TreePath path = new TreePath(nodes);
@@ -551,20 +585,7 @@ public class LiyuImages extends JFrame {
 					if (selectionNode.getAllowsChildren() == false && selectionNode.isLeaf()) {
 						DefaultMutableTreeNode parent = (DefaultMutableTreeNode)selectionNode.getParent();
 						try {
-							/*
-							currentImageFile = new File("./images/"+parent.toString()+"/"+nodeName.substring(0,nodeName.lastIndexOf('.'))+".bin");						
-							//get Image from binary file, write image to temp directory temporary
-							String outFilePath = "./tmp/"+nodeName;
-							FileInputStream fs = new FileInputStream(currentImageFile);
-							byte[] binImage = new byte[(int)currentImageFile.length()];
-							fs.read(binImage, 0, (int)currentImageFile.length());
-							FileOutputStream os = new FileOutputStream(outFilePath);
-							os.write(binImage);
-							fs.close();
-							os.close();
-							//get Image from temp and display it
-							File tempImageFile = new File(outFilePath);
-							*/
+							
 							currentImageFile = new File("./images/"+parent.toString()+"/"+nodeName);
 							selectedImage = getToolkit().getImage(currentImageFile.toURI().toURL());
 							paintSelectedImage.setImage(selectedImage);
@@ -607,18 +628,18 @@ public class LiyuImages extends JFrame {
 		uploadPane = new JPanel();
 		uploadPane.setOpaque(false);
 		getContentPane().add(uploadPane, BorderLayout.NORTH);
-		currentImage = new JLabel("Current Image: ");
+		currentImage = new JLabel("当前图片: ");
 		currentImage.setFont(new Font("",Font.ITALIC, 15));
 		currentImage.setForeground(Color.BLACK);
 		currentImageName = new JTextField();
 		currentImageName.setColumns(10);
 		currentImageName.setEditable(false);
-		uploadLabel = new JLabel("Unload Image: ");
+		uploadLabel = new JLabel("导入图片: ");
 		uploadLabel.setFont(new Font("", Font.ITALIC,15));
 		uploadLabel.setForeground(Color.BLACK);
 		uploadPath = new JTextField();
 		uploadPath.setColumns(20);;
-		uploadButton = new JButton("upload Image");
+		uploadButton = new JButton("导入图片");
 		uploadButton.setFont(new Font("", Font.ITALIC,15));
 		uploadButton.setForeground(Color.BLACK);
 		uploadButton.addActionListener(new ActionListener() {
@@ -668,6 +689,9 @@ public class LiyuImages extends JFrame {
 					paintSelectedImage.setImage(selectedImage);
 					paintSelectedImage.repaint();
 					saveimage.setEnabled(true);
+					//上传到互联网
+					uploadInternetButton.setEnabled(true);
+					
 					currentImageName.setText("");
 					last.setEnabled(false);
 					next.setEnabled(false);
@@ -696,19 +720,19 @@ public class LiyuImages extends JFrame {
 	protected void saveImageToTree(ActionEvent e) {
 		DefaultMutableTreeNode selectNode = (DefaultMutableTreeNode)tree.getLastSelectedPathComponent();
 		if (selectNode == null) {
-			JOptionPane.showMessageDialog(this, "Please select a directory!", null,JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "请选择一个文件夹!", null,JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (imageName.getText().equals("")) {
-			JOptionPane.showMessageDialog(this, "please set image name!",null, JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "请设定相片名字!",null, JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (selectNode.isRoot()) {
-			JOptionPane.showMessageDialog(this, "Don't save images to the main directory!", null, JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "主文件夹无法保存相片!", null, JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (selectNode.toString().indexOf('.') != -1) {
-			JOptionPane.showMessageDialog(this, "This is a file, not a directory!", null, JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "这是文件，不是目录!", null, JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		//avoid the same name in a directory
@@ -731,34 +755,14 @@ public class LiyuImages extends JFrame {
 			BufferedImage bi = new BufferedImage(w,h,BufferedImage.TYPE_3BYTE_BGR);
 			Graphics g = bi.getGraphics();
 			g.drawImage(selectedImage, 0, 0, null);
-			ImageIO.write(bi, imageType, new File("./images/"+selectNode.toString()+"/"+imageName.getText()+"."+imageType));			
+			ImageIO.write(bi, imageType, new File("./images/"+selectNode.toString()+"/"+imageName.getText()+ "_" + LoginFrame.username+"."+imageType));			
 			
 			//set the image is hiden in the directory images
 			File saveOutputFile = new File("./images/"+selectNode.toString()+"/"+imageName.getText()+
-					"."+imageType);
+					 "_" + LoginFrame.username + "."+imageType);
 			String sets = "attrib +H \"" + saveOutputFile.getAbsolutePath() + "\""; 
 			Runtime.getRuntime().exec(sets);
-			/*
-			File toBeSavedFile = new File(uploadPath.getText());
 			
-			DataOutputStream saveOutput = new DataOutputStream(new FileOutputStream(
-					"./images/"+selectNode.toString()+"/"+imageName.getText()+
-					".bin"));
-			FileInputStream infileToSave = new FileInputStream(toBeSavedFile);
-			byte[] binImage = new byte[(int)toBeSavedFile.length()];
-			infileToSave.read(binImage, 0, (int)toBeSavedFile.length());
-			saveOutput.write(binImage, 0, (int)toBeSavedFile.length());
-			saveOutput.flush();
-			saveOutput.close();
-			infileToSave.close();
-			*/
-			//set the image is hiden in the directory images
-			/*
-			File saveOutputFile = new File("./images/"+selectNode.toString()+"/"+imageName.getText()+
-					".bin");
-			String sets = "attrib +H \"" + saveOutputFile.getAbsolutePath() + "\""; 
-			Runtime.getRuntime().exec(sets);
-			*/
 			last.setEnabled(true);
 			next.setEnabled(true);
 		} catch(Exception e1) {
@@ -766,7 +770,7 @@ public class LiyuImages extends JFrame {
 		}
 		//change the node infomation
 		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(imageName.getText()+"."+imageType, false);
+		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(imageName.getText()+ "_" + LoginFrame.username+"."+imageType, false);
 		model.insertNodeInto(newNode, selectNode, selectNode.getChildCount());
 		TreeNode[] nodes = model.getPathToRoot(newNode);
 		TreePath path = new TreePath(nodes);

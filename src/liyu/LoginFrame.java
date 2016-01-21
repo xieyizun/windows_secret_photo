@@ -8,10 +8,16 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.ArrayList;
+
+import java.io.ByteArrayOutputStream;
+
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -20,24 +26,26 @@ public class LoginFrame extends JFrame {
 	/**
 	 * 
 	 */
+	//用于传递给登录成功的界面
+	public static String username;
+	
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JPasswordField password;
 	private JTextField userName;
+	//登录按钮
 	private JButton loginButton;
-	private JPanel passwordConfirmPanel;
-	private JLabel passwordConfirmLabel;
-	private JPasswordField passwordConfirm;
-	private JPanel rollBackPanel;
-	private JLabel rollBackLabel;
-	private JTextField rollBackCode;
+	//注册按钮
+	private JButton registerButton;
+	
 	private JPanel loginButtonPanel;
+	
 	
 	
 	public LoginFrame() {
 		
 		this.setResizable(false);
-		setTitle("Login");
+		setTitle("登录");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(System.getProperty("user.dir")+"\\res\\love.png"));
 		setBounds(450, 200, 540, 440);
@@ -60,16 +68,19 @@ public class LoginFrame extends JFrame {
 		//login
 		JPanel loginPanel = new JPanel();
 		loginPanel.setOpaque(false);
-		contentPane.add(loginPanel);
-		final JLabel login = new JLabel("Login");
+		
+		JLabel login = new JLabel("登录");
 		login.setFont(new Font("", Font.ITALIC, 40));
 		login.setForeground(Color.WHITE);
 		loginPanel.add(login);
+		contentPane.add(loginPanel);
+		
 		//user name
 		JPanel namePanel = new JPanel();
 		namePanel.setOpaque(false);
-		contentPane.add(namePanel);
-		JLabel nameLabel = new JLabel("       Name:      ");
+		
+		
+		JLabel nameLabel = new JLabel("       用户名:      ");
 		nameLabel.setFont(new Font("", Font.ITALIC,20));
 		nameLabel.setForeground(Color.WHITE);
 		userName = new JTextField();
@@ -77,11 +88,13 @@ public class LoginFrame extends JFrame {
 		userName.setPreferredSize(new Dimension(30,25));
 		namePanel.add(nameLabel);
 		namePanel.add(userName);
+		
+		contentPane.add(namePanel);
 		//password
 		final JPanel passwordPanel = new JPanel();
 		passwordPanel.setOpaque(false);
-		contentPane.add(passwordPanel);
-		JLabel passwordLabel = new JLabel("       Password: ");
+		
+		JLabel passwordLabel = new JLabel("       密码: ");
 		passwordLabel.setFont(new Font("", Font.ITALIC, 20));
 		passwordLabel.setForeground(Color.WHITE);
 		password = new JPasswordField();
@@ -89,113 +102,103 @@ public class LoginFrame extends JFrame {
 		password.setPreferredSize(new Dimension(30,25));
 		passwordPanel.add(passwordLabel);
 		passwordPanel.add(password);
+		contentPane.add(passwordPanel);
 		
 		//login button
 		loginButtonPanel = new JPanel();
 		loginButtonPanel.setOpaque(false);
-		loginButton = new JButton("Login");
+		loginButton = new JButton("登录");
 		loginButton.setForeground(Color.BLACK);
 		loginButton.setFont(new Font("", Font.ITALIC,20));
 		loginButton.setPreferredSize(new Dimension(120,30));
 		loginButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				loginButtonClick();
+				try {
+					loginButtonClick();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		});
 		loginButtonPanel.add(loginButton);
 		
 		//register
 		
-				File info = new File(System.getProperty("user.dir")+"\\user");
-				if (info != null && info.listFiles().length != 0) {
-					loginButton.setText("Login");
-					contentPane.add(loginButtonPanel);
-				} else {
-					login.setText("Register");
-					setTitle("Register");
-					loginButton.setText("Register");
-					passwordConfirmPanel = new JPanel();
-					passwordConfirmPanel.setOpaque(false);
-					passwordConfirmLabel = new JLabel("          Confirm: ");
-					passwordConfirmLabel.setFont(new Font("", Font.ITALIC, 20));
-					passwordConfirmLabel.setForeground(Color.WHITE);
-					passwordConfirm = new JPasswordField();
-					passwordConfirm.setColumns(15);
-					passwordConfirm.setPreferredSize(new Dimension(30,25));
-					passwordConfirmPanel.add(passwordConfirmLabel);
-					passwordConfirmPanel.add(passwordConfirm);
-					rollBackPanel = new JPanel();
-					rollBackPanel.setOpaque(false);
-					rollBackLabel = new JLabel("Roll back code:");
-					rollBackLabel.setFont(new Font("",Font.ITALIC, 20));
-					rollBackLabel.setForeground(Color.WHITE);
-					rollBackCode = new JTextField();
-					rollBackCode.setColumns(15);
-					rollBackCode.setPreferredSize(new Dimension(30,25));
-					rollBackPanel.add(rollBackLabel);
-					rollBackPanel.add(rollBackCode);
-					contentPane.add(passwordConfirmPanel);
-					contentPane.add(rollBackPanel);
-					contentPane.add(loginButtonPanel);
-					
-				}
+		registerButton = new JButton("注册");
+		registerButton.setForeground(Color.BLACK);
+		registerButton.setFont(new Font("", Font.ITALIC,20));
+		registerButton.setPreferredSize(new Dimension(120,30));
 		
+		registerButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				onRegisterButtonClick();
+	    		
+			}
+		});
+		loginButtonPanel.add(registerButton);
+		
+		contentPane.add(loginButtonPanel);
 		
 	}
+	//转向注册页面
+	protected void onRegisterButtonClick() {
+		RegisterFrame.launch();
+		this.setVisible(false);
+	}
 	@SuppressWarnings("deprecation")
-	protected void loginButtonClick() {
+	protected void loginButtonClick() throws IOException {
 		String name = userName.getText();
 		String pw = password.getText();
-	    if (loginButton.getText().equals("Login")) {
-	    	String infoPath = System.getProperty("user.dir")+"\\user\\info.dat";
-	    	ArrayList<String> infoMessage = new ArrayList<String>();
-	    	try {
-	    		@SuppressWarnings("resource")
-	    		DataInputStream info = new DataInputStream(new FileInputStream(infoPath));
-	    		String str = "";
-	    		while ((str=info.readLine()) != null) {
-	    			infoMessage.add(str);
-	    		}
-	    	} catch(Exception e) {
-	    		e.getMessage();
-	    	}
-	    	if (name.isEmpty() || pw.isEmpty() || infoMessage.size() == 0 || !name.equals(infoMessage.get(0))
-				|| !pw.equals(infoMessage.get(1))) {
-	    		JOptionPane.showMessageDialog(this, "Login Failure","Login Failure", JOptionPane.WARNING_MESSAGE);
-	    		String rollBackCode=JOptionPane.showInputDialog(" Forget your password?\n"
-	    				+ " Please input your roll back code: ");
-	    		if (infoMessage.get(2).equals(rollBackCode)) {
-	    			JOptionPane.showMessageDialog(this, "Your login name is: "+infoMessage.get(0)+"\n"
-	    					+"Your password is: "+infoMessage.get(1));
-	    			LiyuImages.launch();
-	    		} else {
-	    			JOptionPane.showMessageDialog(this, "Roll back code error!", null, JOptionPane.WARNING_MESSAGE);
-	    		}
-	    	} else {
-	    		JOptionPane.showMessageDialog(this, "Login Successfully","Successful",JOptionPane.INFORMATION_MESSAGE);
-	    		LiyuImages.launch();
-	    		this.setVisible(false);
-	    	}
-	    } else {
-	    	String comfirm = passwordConfirm.getText();
-	    	String rbc = rollBackCode.getText();
-	    	if (!name.isEmpty() && !pw.isEmpty() && !comfirm.isEmpty()) {
-	    		if (!pw.equals(comfirm)) {
-	    			JOptionPane.showMessageDialog(this, "Your password is not the same!","Register Failure", JOptionPane.WARNING_MESSAGE);	
-	    		} else if (rbc.isEmpty()) {
-	    			JOptionPane.showMessageDialog(this, "Please input the roll back code so you can find back your username and password",
-	    					"Register Failure", JOptionPane.WARNING_MESSAGE);
-	    		}
-	    		else {
-	    			new CreateUser(name, pw, rbc);
-	    			JOptionPane.showMessageDialog(this, "Register Successfully","Successful",JOptionPane.INFORMATION_MESSAGE);
-	    			LiyuImages.launch();
-	    			this.setVisible(false);
-	    		}
-	    	} else {
-	    		JOptionPane.showMessageDialog(this, "There are blanks!","Failure", JOptionPane.WARNING_MESSAGE);	
-	    	}
-	    }
+		if (name.isEmpty() || pw.isEmpty()) {
+	    		JOptionPane.showMessageDialog(this, "登录失败","用户名或密码不能为空", JOptionPane.WARNING_MESSAGE);		
+		} else {
+			String serverUrl = "http://localhost:8080/PhotoServer/servlet/UserServlet?username=" + 
+									name + "&password=" + pw;
+			URL url = new URL(serverUrl);
+			
+			HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+			conn.setConnectTimeout(10000);
+			conn.setDoInput(true);
+			conn.setDoOutput(true);
+			conn.setRequestMethod("GET");
+			conn.setRequestProperty("Connection", "Keep-Alive");
+			conn.setRequestProperty("Charset", "utf-8");
+			
+			//连接
+			conn.connect();
+			//读取返回结果
+			if (conn.getResponseCode() == 200) {
+				InputStream in = conn.getInputStream();
+				
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				byte[] bytes = new byte[1024];
+				int len = -1;
+				while ((len = in.read(bytes)) > 0) {
+					out.write(bytes, 0, len);
+				}
+				
+				in.close();
+				//String result = out.toByteArray().toString();这种方式会乱码
+				String result = new String(out.toByteArray());
+				
+				System.out.println(result);
+				if (result != null && result.equals("登录成功")) {
+					//用于传递给登录后的页面显示
+					this.username = name;
+					
+					JOptionPane.showMessageDialog(this, "登录成功","登录成功",JOptionPane.INFORMATION_MESSAGE);
+		    		LiyuImages.launch();
+		    		this.setVisible(false);
+				} else {
+					JOptionPane.showMessageDialog(this, "登录失败","用户名或密码错误", JOptionPane.WARNING_MESSAGE);
+				}
+							
+			} else {
+				JOptionPane.showMessageDialog(this, "服务器出错","登录失败",JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		
 	}
 	
 	public static void main(String[] args) {
